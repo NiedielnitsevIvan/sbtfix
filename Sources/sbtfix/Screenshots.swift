@@ -1,63 +1,101 @@
 import AppKit
-import SwiftUI
 import SonyProtocol
 
-/// `sbtfix --screenshots <dir>` renders the menu panel in each state to PNGs and exits.
-/// Used to produce the images in docs/screenshots. Offscreen captures draw "on" switches in
-/// their inactive (gray) style, so the sample states keep switches off.
+/// `sbtfix --screenshots <dir>` captures the menu in each state, in light and dark mode, to PNGs.
+/// Used to produce the images in docs/screenshots. Liquid Glass only renders on screen, so for each
+/// state a child process (`--screenshot <state> <light|dark>`) opens the real menu over a plain
+/// backdrop and this process captures it with screencapture. The menu draws its switches in their
+/// inactive (gray) style, so the sample states keep switches off.
 enum Screenshots {
+    private static let states: [(name: String, controller: () -> HeadphoneController)] = [
+        ("noise-cancelling", { .preview(status: .connected) }),
+        ("ambient", { .preview(status: .connected,
+                               ambient: AmbientState(mode: .ambient, focusOnVoice: false, level: 14)) }),
+        ("off", { .preview(status: .connected, ambient: AmbientState(mode: .off, focusOnVoice: false, level: 20)) }),
+        ("wind-xm4", { .preview(status: .connected, name: "WH-1000XM4",
+                                ambient: AmbientState(mode: .windNoiseReduction, focusOnVoice: false, level: 20)) }),
+        ("earbuds", { .preview(status: .connected, name: "WF-1000XM5",
+                               batteries: Batteries(left: BatteryLevel(level: 80, charging: false),
+                                                    right: BatteryLevel(level: 76, charging: false),
+                                                    caseBattery: BatteryLevel(level: 45, charging: true))) }),
+        ("waiting", { .preview(status: .searching, batteries: Batteries()) }),
+        ("connecting", { .preview(status: .connecting, batteries: Batteries()) }),
+        ("bluetooth-off", { .preview(status: .failed("Bluetooth is turned off"), batteries: Batteries()) }),
+    ]
+
+    /// Set in the child process: the sample controller and appearance to show.
+    static let shot: (controller: HeadphoneController, dark: Bool)? = {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: "--screenshot"), i + 2 < args.count,
+              let state = states.first(where: { $0.name == args[i + 1] }) else { return nil }
+        return (state.controller(), args[i + 2] == "dark")
+    }()
+
     static func render(to dir: URL) {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let earbuds = Batteries(left: BatteryLevel(level: 80, charging: false),
-                                right: BatteryLevel(level: 76, charging: false),
-                                caseBattery: BatteryLevel(level: 45, charging: true))
-        let shots: [(String, HeadphoneController)] = [
-            ("noise-cancelling", .preview(status: .connected)),
-            ("ambient", .preview(status: .connected,
-                                 ambient: AmbientState(mode: .ambient, focusOnVoice: false, level: 14))),
-            ("off", .preview(status: .connected, ambient: AmbientState(mode: .off, focusOnVoice: false, level: 20))),
-            ("wind-xm4", .preview(status: .connected, name: "WH-1000XM4",
-                                  ambient: AmbientState(mode: .windNoiseReduction, focusOnVoice: false, level: 20))),
-            ("earbuds", .preview(status: .connected, name: "WF-1000XM5", batteries: earbuds)),
-            ("waiting", .preview(status: .searching, batteries: Batteries())),
-            ("connecting", .preview(status: .connecting, batteries: Batteries())),
-            ("bluetooth-off", .preview(status: .failed("Bluetooth is turned off"), batteries: Batteries())),
-        ]
-        for appearance in [NSAppearance.Name.darkAqua, .aqua] {
-            let suffix = appearance == .darkAqua ? "dark" : "light"
-            for (name, controller) in shots {
-                let url = dir.appendingPathComponent("\(name)-\(suffix).png")
-                snapshot(ControlPanel(controller: controller), appearance: appearance, to: url)
+        for appearance in ["dark", "light"] {
+            for state in states {
+                let url = dir.appendingPathComponent("\(state.name)-\(appearance).png")
+                // A menu opened right after the previous child quit sometimes closes at once; try again.
+                if !(1...3).contains(where: { _ in shoot(state.name, appearance, to: url) }) {
+                    print("Couldn't capture \(url.lastPathComponent)")
+                }
             }
         }
     }
 
-    private static func snapshot<V: View>(_ view: V, appearance: NSAppearance.Name, to url: URL) {
-        let hosting = NSHostingView(rootView: view)
-        hosting.appearance = NSAppearance(named: appearance)
-        let size = hosting.fittingSize
-        hosting.frame = NSRect(origin: .zero, size: size)
+    /// Runs one child and captures its menu. False if the menu didn't stay open for it.
+    private static func shoot(_ state: String, _ appearance: String, to url: URL) -> Bool {
+        let child = Process()
+        let out = Pipe()
+        child.executableURL = Bundle.main.executableURL
+        child.arguments = ["--screenshot", state, appearance]
+        child.standardOutput = out
+        guard (try? child.run()) != nil else { return false }
+        defer { child.terminate(); child.waitUntilExit() }
+        let line = String(decoding: out.fileHandleForReading.availableData, as: UTF8.self)
+        let n = line.split(separator: " ").compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        guard n.count == 4 else { return false }
+        // Let it fade in; the window list only shows whether it's still open.
+        Thread.sleep(forTimeInterval: 1)
+        guard child.isRunning, hasMenuWindow(child.processIdentifier) else { return false }
+        capture(CGRect(x: n[0], y: n[1], width: n[2], height: n[3]).insetBy(dx: -28, dy: -28), to: url)
+        return child.isRunning
+    }
 
-        // Mimic the menu-bar popover: rounded panel on the system window background.
-        let panel = NSView(frame: hosting.frame)
-        panel.appearance = hosting.appearance
-        panel.wantsLayer = true
-        panel.layer?.cornerRadius = 12
-        panel.layer?.masksToBounds = true
-        panel.addSubview(hosting)
+    /// Child process: opens the menu over a plain backdrop and prints its frame (top-left origin) for
+    /// the parent, which ends the process once it has captured it.
+    static func open(_ menu: NSMenu, dark: Bool) -> Never {
+        NSApp.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        let screen = NSScreen.main?.visibleFrame ?? .zero
+        let backdrop = NSWindow(contentRect: NSRect(x: screen.maxX - 460, y: screen.maxY - 680, width: 460, height: 680),
+                                styleMask: .borderless, backing: .buffered, defer: false)
+        // GitHub's page colors, so the images blend into the README.
+        backdrop.backgroundColor = dark ? NSColor(srgbRed: 0x0D / 255, green: 0x11 / 255, blue: 0x17 / 255, alpha: 1) : .white
+        backdrop.level = NSWindow.Level(NSWindow.Level.popUpMenu.rawValue - 1)
+        backdrop.orderFrontRegardless()
+        let topLeft = NSPoint(x: screen.maxX - 420, y: screen.maxY - 40)
+        let screenHeight = NSScreen.screens.first?.frame.height ?? 0
+        print(topLeft.x, screenHeight - topLeft.y, menu.size.width, menu.size.height)
+        fflush(stdout)
+        NSApp.activate()
+        menu.popUp(positioning: nil, at: topLeft, in: nil)
+        exit(0)
+    }
 
-        let window = NSWindow(contentRect: panel.frame, styleMask: .borderless, backing: .buffered, defer: false)
-        window.appearance = hosting.appearance
-        window.contentView = panel
-        panel.effectiveAppearance.performAsCurrentDrawingAppearance {
-            panel.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+    private static func hasMenuWindow(_ pid: pid_t) -> Bool {
+        let menuLevel = Int(CGWindowLevelForKey(.popUpMenuWindow))
+        let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] ?? []
+        return windows.contains {
+            $0[kCGWindowOwnerPID as String] as? pid_t == pid && $0[kCGWindowLayer as String] as? Int == menuLevel
         }
-        panel.layoutSubtreeIfNeeded()
-        panel.displayIfNeeded()
+    }
 
-        guard let rep = panel.bitmapImageRepForCachingDisplay(in: panel.bounds) else { return }
-        rep.size = panel.bounds.size
-        panel.cacheDisplay(in: panel.bounds, to: rep)
-        try? rep.representation(using: .png, properties: [:])?.write(to: url)
+    private static func capture(_ rect: CGRect, to url: URL) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        p.arguments = ["-x", "-R\(Int(rect.minX)),\(Int(rect.minY)),\(Int(rect.width)),\(Int(rect.height))", url.path]
+        try? p.run()
+        p.waitUntilExit()
     }
 }

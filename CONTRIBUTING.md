@@ -44,14 +44,17 @@ Guidelines:
 
 ## Screenshots
 
-The images in `docs/screenshots` are rendered from the real UI with sample data:
+The images in `docs/screenshots` are captured from the real menu with sample data:
 
 ```sh
 ./build.sh
 build/sbtfix.app/Contents/MacOS/sbtfix --screenshots "$PWD/docs/screenshots"
 ```
 
-The states are defined in `Sources/sbtfix/Screenshots.swift`.
+Liquid Glass only renders on screen, so this opens each state's menu in the top-right corner
+for a moment (about 30 s in all) and captures it with `screencapture`. Your terminal needs
+Screen Recording permission, and keep the pointer away from the menu while it runs. The states
+are defined in `Sources/sbtfix/Screenshots.swift`.
 
 ## Making a release
 

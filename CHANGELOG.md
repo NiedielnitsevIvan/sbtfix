@@ -18,7 +18,8 @@
 - Speak-to-Chat toggle on WH-1000XM4: its reply to the status request was ignored, so the
   toggle never appeared
 - Screenshots of every state in the README, in light and dark mode
-- `sbtfix --screenshots <dir>` regenerates them
+- `sbtfix --screenshots <dir>` regenerates them, captured from the real menu
+- Building needs Xcode 26 or later (macOS 26 SDK); the app still runs on macOS 14
 - Release notes are now built from this changelog automatically
 
 ## 1.0.0

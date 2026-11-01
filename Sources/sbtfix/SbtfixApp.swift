@@ -7,7 +7,7 @@ import SonyProtocol
 /// consistently. menuWillOpen is also a reliable "opened" hook, which MenuBarExtra's onAppear isn't.
 @main
 final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
-    private let controller = HeadphoneController()
+    private let controller = Screenshots.shot?.controller ?? HeadphoneController()
     private let menu = NSMenu()
     private let retryItem = NSMenuItem(title: "Retry", action: #selector(retry), keyEquivalent: "")
     private var startupItems: [NSMenuItem] = []
@@ -50,6 +50,8 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(retryItem)
         menu.addItem(withTitle: "Quit sbtfix", action: #selector(NSApplication.terminate), keyEquivalent: "q")
         menu.delegate = self
+        retryVisibility = controller.$status.sink { [retryItem] in retryItem.isHidden = $0 == .connected }
+        if let shot = Screenshots.shot { Screenshots.open(menu, dark: shot.dark) }
 
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.menu = menu
@@ -60,7 +62,6 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
             .map { $0 == .connected ? $1.mode.symbol : "headphones" }
             .removeDuplicates()
             .sink { item.button?.image = NSImage(systemSymbolName: $0, accessibilityDescription: "sbtfix") }
-        retryVisibility = controller.$status.sink { [retryItem] in retryItem.isHidden = $0 == .connected }
         // Connect at launch rather than when the menu is first opened.
         controller.start()
     }
