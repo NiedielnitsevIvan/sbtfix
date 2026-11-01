@@ -14,6 +14,7 @@
 - "On connect" submenu, and Retry shown only while not connected
 - Redesigned panel: mode buttons in a 2×2 grid of Liquid Glass tiles on macOS 26 and later,
   narrower, and its height follows the content
+- App icon
 - Speak-to-Chat toggle on WH-1000XM4: its reply to the status request was ignored, so the
   toggle never appeared
 - Screenshots of every state in the README, in light and dark mode
