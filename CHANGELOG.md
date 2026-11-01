@@ -9,6 +9,11 @@
   and repeated status checks no longer trigger UI updates
 - The init request is repeated when the headphones miss it right after connecting
 - The Speak-to-Chat toggle no longer flips back for a moment after a click
+- The menu opens at once: a plain status-item menu replaces MenuBarExtra, which often took
+  1.5–3 s to open after the app had been idle
+- "On connect" submenu, and Retry shown only while not connected
+- Redesigned panel: mode buttons in a 2×2 grid of Liquid Glass tiles on macOS 26 and later,
+  narrower, and its height follows the content
 - Speak-to-Chat toggle on WH-1000XM4: its reply to the status request was ignored, so the
   toggle never appeared
 - Screenshots of every state in the README, in light and dark mode

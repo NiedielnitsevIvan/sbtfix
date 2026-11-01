@@ -139,7 +139,7 @@ Sources/
     DeviceProfile.swift         Per-model features (wind reduction, earbuds, …)
   sbtfix/
     HeadphoneController.swift   IOBluetooth RFCOMM connection, command queue, state
-    SbtfixApp.swift        SwiftUI MenuBarExtra UI
+    SbtfixApp.swift        Status-item menu hosting the SwiftUI panel
 Tests/SonyProtocolTests/        Protocol tests (swift test)
 ```
 
