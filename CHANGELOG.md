@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- "On connect" startup mode: switch to Off or Ambient Sound as soon as the headphones connect
+  (WH-1000XM4 always power on in Noise Cancelling)
+- Ambient level and Focus on Voice are remembered across launches
+- Much lower idle CPU use: Bluetooth is polled every 30 s instead of 5 s, only while disconnected,
+  and repeated status checks no longer trigger UI updates
+- The init request is repeated when the headphones miss it right after connecting
+- The Speak-to-Chat toggle no longer flips back for a moment after a click
 - Speak-to-Chat toggle on WH-1000XM4: its reply to the status request was ignored, so the
   toggle never appeared
 - Screenshots of every state in the README, in light and dark mode

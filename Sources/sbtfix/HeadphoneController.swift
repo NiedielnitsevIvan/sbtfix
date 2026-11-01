@@ -12,6 +12,32 @@ struct Batteries: Equatable {
     var isEmpty: Bool { single == nil && left == nil && right == nil && caseBattery == nil }
 }
 
+/// Mode forced right after the headphones connect.
+///
+/// WH-1000XM4 always power on in Noise Cancelling (factory behaviour, not configurable)
+/// and ignore the NC/AMB button until they are worn. Sending the mode over the control
+/// channel does not depend on the wear sensor, so this is the only way to have them in
+/// Off / Ambient before they go on your head.
+enum StartupMode: String, CaseIterable {
+    case keep, off, ambient
+
+    var title: String {
+        switch self {
+        case .keep: "Keep device setting"
+        case .off: "Off"
+        case .ambient: "Ambient Sound"
+        }
+    }
+
+    private static let key = "startupMode"
+
+    static func load() -> StartupMode {
+        StartupMode(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .keep
+    }
+
+    func save() { UserDefaults.standard.set(rawValue, forKey: Self.key) }
+}
+
 /// Owns the RFCOMM link to the headphones. All IOBluetooth callbacks arrive on the main run loop.
 final class HeadphoneController: NSObject, ObservableObject {
     private let log = Logger(subsystem: "io.github.htsecurity.sbtfix", category: "bt")
@@ -27,12 +53,25 @@ final class HeadphoneController: NSObject, ObservableObject {
     @Published private(set) var deviceName: String?
     @Published private(set) var profile = DeviceProfile()
     @Published private(set) var batteries = Batteries()
-    @Published private(set) var ambient = AmbientState(mode: .noiseCancelling, focusOnVoice: false, level: 10)
+    /// Level and focus-on-voice are remembered across launches (see remember(_:)): v1 reports level 0
+    /// outside ambient mode, and the startup mode needs them to switch to ambient without resetting them.
+    @Published private(set) var ambient = AmbientState(
+        mode: .noiseCancelling,
+        focusOnVoice: UserDefaults.standard.bool(forKey: HeadphoneController.focusKey),
+        level: UserDefaults.standard.object(forKey: HeadphoneController.levelKey) as? Int ?? 10)
     @Published private(set) var ambientLayout: AmbientLayout?
     /// nil until the device answers; stays nil on models without Speak-to-Chat.
     @Published private(set) var speakToChat: Bool?
 
+    /// Applied once per connection, as soon as the device has reported its ambient state.
+    var startupMode: StartupMode = StartupMode.load() {
+        didSet { startupMode.save() }
+    }
+
     var availableModes: [AmbientMode] { profile.modes(layout: ambientLayout) }
+
+    private static let levelKey = "ambientLevel"
+    private static let focusKey = "focusOnVoice"
 
     /// Control service UUIDs: v2 (WH-1000XM5 and newer) first, then v1 (XM3/XM4 era).
     private static let serviceUUIDs: [[UInt8]] = [
@@ -58,15 +97,28 @@ final class HeadphoneController: NSObject, ObservableObject {
     /// Those echoes lag behind the UI, so they're ignored until things settle, then re-read once.
     private var lastAmbientSet = Date.distantPast
     private var ambientSyncTimer: Timer?
+    /// Speak-to-Chat replies lag behind a toggle the same way (a read sent before it, an earlier toggle's
+    /// echo), so they're ignored for a moment after one.
+    private var lastStcSet = Date.distantPast
 
     /// Detected from the init reply; nothing but init is sent before it's known.
     private var version: ProtocolVersion?
+    /// The startup mode waits for the first ambient report so it uses the device's own layout (level and
+    /// focus come from remember(_:)). Expires, so a much later report (a button press) can't trigger it.
+    private var startupModeDeadline: Date?
 
     func start() {
         connectNotification = IOBluetoothDevice.register(forConnectNotifications: self,
                                                          selector: #selector(deviceDidConnect(_:device:)))
-        // Covers Bluetooth being switched on and connect events we miss (e.g. while it was off).
-        retryTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+        startRetryTimer()
+        connect()
+    }
+
+    /// Safety net for Bluetooth being switched on and connect events we miss (e.g. while it was off).
+    /// Connect events are the fast path (see deviceDidConnect), so it polls slowly and only while disconnected.
+    private func startRetryTimer() {
+        guard retryTimer == nil else { return }
+        retryTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             guard let self else { return }
             if self.status == .connecting, let since = self.connectingSince, Date().timeIntervalSince(since) > 20 {
                 self.log.error("connect timed out")
@@ -75,20 +127,24 @@ final class HeadphoneController: NSObject, ObservableObject {
             guard self.channel == nil, self.status != .connecting else { return }
             self.connect()
         }
-        connect()
+        retryTimer?.tolerance = 5
     }
 
     func connect() {
         guard channel == nil else { return }
+        // Runs on every retry tick. @Published fires even for an equal value, and each fire makes the
+        // panel re-render, even while the menu is closed, so only assign what actually changed.
         guard IOBluetoothHostController.default()?.powerState == kBluetoothHCIPowerStateON else {
-            status = .failed("Bluetooth is turned off")
+            let off = Status.failed("Bluetooth is turned off")
+            if status != off { status = off }
             return
         }
         let paired = (IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice]) ?? []
         let sony = paired.filter { DeviceProfile.isSony(name: $0.name ?? "") }
         guard let target = sony.first(where: { $0.isConnected() }) else {
-            status = sony.isEmpty ? .failed("No paired Sony headphones found") : .searching
-            deviceName = sony.first?.name
+            let idle: Status = sony.isEmpty ? .failed("No paired Sony headphones found") : .searching
+            if status != idle { status = idle }
+            if deviceName != sony.first?.name { deviceName = sony.first?.name }
             return
         }
         device = target
@@ -96,6 +152,8 @@ final class HeadphoneController: NSObject, ObservableObject {
         profile = DeviceProfile.forName(target.name ?? "")
         status = .connecting
         connectingSince = Date()
+        // The slow retry tick also enforces the 20 s connect timeout; move it so it does so on time.
+        retryTimer?.fireDate = Date(timeIntervalSinceNow: 21)
 
         if let channelID = rfcommChannelID(for: target) {
             openChannel(channelID)
@@ -109,6 +167,8 @@ final class HeadphoneController: NSObject, ObservableObject {
 
     /// Re-reads state from the headphones (e.g. after buttons on the headphones were used).
     func refresh() {
+        // While disconnected, re-check now so the panel doesn't show a status up to one slow tick old.
+        retryTimer?.fire()
         guard let version, status == .connected else { return }
         if profile.hasAmbientControl {
             if case .v2(let type, _) = ambientLayout {
@@ -142,12 +202,14 @@ final class HeadphoneController: NSObject, ObservableObject {
     func setSpeakToChat(_ on: Bool) {
         guard let version else { return }
         speakToChat = on
+        lastStcSet = Date()
         enqueue(Command.setSpeakToChat(on, version), key: "stc")
     }
 
     private func sendAmbient(_ s: AmbientState) {
         guard let version else { return }
         ambient = s
+        remember(s)
         // If the device hasn't told us its layout yet, fall back to the most common one.
         let layout = ambientLayout ?? (version == .v1
             ? .v1(windCapable: profile.hasWindNoiseReduction)
@@ -155,7 +217,7 @@ final class HeadphoneController: NSObject, ObservableObject {
         enqueue(Command.setAmbient(s, layout: layout), key: "anc")
         lastAmbientSet = Date()
         ambientSyncTimer?.invalidate()
-        ambientSyncTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
+        ambientSyncTimer = menuSafeTimer(1.0) { [weak self] _ in
             guard let self, let version = self.version else { return }
             if case .v2(let type, _) = layout {
                 self.enqueue(Command.getAmbient(.v2, inquiredType: type), key: "get-anc")
@@ -163,6 +225,13 @@ final class HeadphoneController: NSObject, ObservableObject {
                 self.enqueue(Command.getAmbient(version), key: "get-anc")
             }
         }
+    }
+
+    /// Level and focus only mean something in ambient mode, so only ambient states are saved.
+    private func remember(_ s: AmbientState) {
+        guard s.mode == .ambient else { return }
+        UserDefaults.standard.set(s.level, forKey: Self.levelKey)
+        UserDefaults.standard.set(s.focusOnVoice, forKey: Self.focusKey)
     }
 
     private func requestBattery() {
@@ -187,7 +256,8 @@ final class HeadphoneController: NSObject, ObservableObject {
     }
 
     @objc func sdpQueryComplete(_ device: IOBluetoothDevice!, status: IOReturn) {
-        guard let d = device, d == self.device else { return }
+        // A duplicate or stale completion (Retry, timeout) must not open a second channel.
+        guard let d = device, d == self.device, channel == nil, self.status == .connecting else { return }
         if let id = rfcommChannelID(for: d) {
             openChannel(id)
         } else {
@@ -207,9 +277,16 @@ final class HeadphoneController: NSObject, ObservableObject {
     }
 
     @objc private func deviceDidConnect(_ note: IOBluetoothUserNotification, device: IOBluetoothDevice) {
-        guard DeviceProfile.isSony(name: device.name ?? ""), channel == nil else { return }
+        guard DeviceProfile.isSony(name: device.name ?? "") else { return }
         // Give the audio profiles a moment to settle before opening RFCOMM.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in self?.connect() }
+        // Kept short on purpose: the startup mode must land before the headphones go on.
+        // Retried a few times because the retry timer is only a slow safety net.
+        for delay in [1.0, 3, 6, 10] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                guard let self, self.channel == nil, self.status != .connecting else { return }
+                self.connect()
+            }
+        }
     }
 
     @objc private func deviceDidDisconnect(_ note: IOBluetoothUserNotification, device: IOBluetoothDevice) {
@@ -233,10 +310,12 @@ final class HeadphoneController: NSObject, ObservableObject {
         sequence = 0
         parser = FrameParser()
         version = nil
+        startupModeDeadline = nil
         ambientLayout = nil
         batteries = Batteries()
         speakToChat = nil
         status = .searching
+        startRetryTimer()
     }
 
     // MARK: - Messaging
@@ -257,10 +336,18 @@ final class HeadphoneController: NSObject, ObservableObject {
         write(Message(type: .command1, sequence: sequence, payload: next.payload).encode())
         awaitingAck = true
         ackTimer?.invalidate()
-        ackTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
+        ackTimer = menuSafeTimer(1.5) { [weak self] _ in
             self?.awaitingAck = false
             self?.pump()
         }
+    }
+
+    /// A one-shot timer that also fires while the menu is open (the run loop is then in event-tracking
+    /// mode), so commands sent from the panel aren't held until it closes.
+    private func menuSafeTimer(_ interval: TimeInterval, _ block: @escaping (Timer) -> Void) -> Timer {
+        let timer = Timer(timeInterval: interval, repeats: false, block: block)
+        RunLoop.main.add(timer, forMode: .common)
+        return timer
     }
 
     private func write(_ bytes: [UInt8]) {
@@ -293,16 +380,29 @@ final class HeadphoneController: NSObject, ObservableObject {
             guard version == nil else { return }
             version = v
             log.info("protocol \(String(describing: v), privacy: .public)")
+            // 5 s covers the slowest first reply (v2's second GET, after the first one's 1.5 s ACK timeout).
+            startupModeDeadline = Date().addingTimeInterval(5)
             requestInitialState(v)
         case let .ambient(state, layout):
             ambientLayout = layout
+            let isFirstReport = Date() < startupModeDeadline ?? .distantPast
+            startupModeDeadline = nil
             // Don't clobber a change the user is still making (see lastAmbientSet).
             guard !queue.contains(where: { $0.key == "anc" }),
                   Date().timeIntervalSince(lastAmbientSet) > 0.8 else { return }
             var s = state
-            // v1 reports level 0 outside ambient mode; keep the last real level for the slider.
-            if s.mode != .ambient { s.level = ambient.level }
+            // Level and focus only apply in ambient mode (v1 reports level 0 elsewhere): keep the last real ones.
+            if s.mode != .ambient {
+                s.level = ambient.level
+                s.focusOnVoice = ambient.focusOnVoice
+            }
             ambient = s
+            remember(s)
+            if isFirstReport {
+                applyStartupMode()
+                // It must land before the headphones go on: send it ahead of the battery/Speak-to-Chat reads.
+                if let i = queue.firstIndex(where: { $0.key == "anc" }) { queue.insert(queue.remove(at: i), at: 0) }
+            }
         case .battery(let level):
             batteries.single = level
         case let .batteryDual(left, right):
@@ -311,10 +411,34 @@ final class HeadphoneController: NSObject, ObservableObject {
         case .batteryCase(let level):
             batteries.caseBattery = level
         case .speakToChat(let enabled):
+            guard !queue.contains(where: { $0.key == "stc" }),
+                  Date().timeIntervalSince(lastStcSet) > 0.8 else { return }
             speakToChat = enabled
         case .unknown:
             break
         }
+    }
+
+    private func applyStartupMode() {
+        guard profile.hasAmbientControl else { return }
+        switch startupMode {
+        case .keep:
+            return
+        case .off:
+            log.info("startup mode: off")
+            setMode(.off)
+        case .ambient:
+            log.info("startup mode: ambient")
+            setMode(.ambient)
+        }
+    }
+
+    /// The headphones can miss the init request right after connecting (a WH-1000XM4 ignored one sent
+    /// ~1 s after its audio link came up), and nothing else is sent until it's answered, so repeat it.
+    private func requestInit(attempt: Int = 1) {
+        guard version == nil, status == .connected, attempt <= 5 else { return }
+        enqueue(Command.initRequest, key: "init")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.requestInit(attempt: attempt + 1) }
     }
 
     private func requestInitialState(_ v: ProtocolVersion) {
@@ -341,14 +465,17 @@ extension HeadphoneController: IOBluetoothRFCOMMChannelDelegate {
             channel = nil
             status = .failed(String(format: "Control channel failed to open (0x%08x)", error))
             log.error("channel open failed \(error)")
+            startRetryTimer()
             return
         }
         status = .connected
+        retryTimer?.invalidate()
+        retryTimer = nil
         log.info("control channel open")
         disconnectNotification = device?.register(forDisconnectNotification: self,
                                                   selector: #selector(deviceDidDisconnect(_:device:)))
         // Everything else is requested once the init reply tells us the protocol version.
-        enqueue(Command.initRequest)
+        requestInit()
         // Battery isn't always pushed; refresh it periodically.
         batteryTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             self?.requestBattery()
