@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <g transform="translate(100 100) scale(6.6452)">
+    <rect width="124" height="124" rx="28" fill="#DCDAD5"/>
+    <g transform="translate(4 -1)">
+      <path d="M22.7 69.6 A40 40 0 1 1 101.3 69.6" fill="none" stroke="#E4572E" stroke-width="8"/>
+      <path d="M22.7 69.6 A40 40 0 1 1 101.3 69.6" fill="none" stroke="#DCDAD5" stroke-width="4"/>
+      <g transform="rotate(-12 35 88)">
+        <ellipse cx="35" cy="88" rx="21" ry="25" fill="#DCDAD5" stroke="#E4572E" stroke-width="2"/>
+        <ellipse cx="35" cy="89.5" rx="15" ry="18" fill="#DCDAD5" stroke="#E4572E" stroke-width="1.5"/>
+      </g>
+      <g transform="rotate(12 89 88)">
+        <ellipse cx="89" cy="88" rx="21" ry="25" fill="#DCDAD5" stroke="#E4572E" stroke-width="2"/>
+        <ellipse cx="89" cy="89.5" rx="15" ry="18" fill="#DCDAD5" stroke="#E4572E" stroke-width="1.5"/>
+      </g>
+    </g>
+    <g transform="translate(0 -4)">
+      <path d="M22.7 69.6 A40 40 0 1 1 101.3 69.6" fill="none" stroke="#E4572E" stroke-width="8"/>
+      <path d="M22.7 69.6 A40 40 0 1 1 101.3 69.6" fill="none" stroke="#DCDAD5" stroke-width="4"/>
+      <g transform="rotate(-12 35 88)">
+        <ellipse cx="35" cy="88" rx="21" ry="25" fill="#DCDAD5" stroke="#E4572E" stroke-width="2"/>
+        <ellipse cx="35" cy="89.5" rx="15" ry="18" fill="#DCDAD5" stroke="#E4572E" stroke-width="1.5"/>
+      </g>
+      <g transform="rotate(12 89 88)">
+        <ellipse cx="89" cy="88" rx="21" ry="25" fill="#DCDAD5" stroke="#E4572E" stroke-width="2"/>
+        <ellipse cx="89" cy="89.5" rx="15" ry="18" fill="#DCDAD5" stroke="#E4572E" stroke-width="1.5"/>
+      </g>
+    </g>
+    <g transform="translate(-4 -7)">
+      <path d="M22.7 69.6 A40 40 0 1 1 101.3 69.6" fill="none" stroke="#E4572E" stroke-width="6"/>
+      <path d="M41.4 32.5 A36 36 0 0 1 82.6 32.5" fill="none" stroke="#E4572E" stroke-width="8" stroke-linecap="round"/>
+      <path d="M39.9 30.5 A38.5 38.5 0 0 1 84.1 30.5" fill="none" stroke="#DCDAD5" stroke-width="1.8"/>
+      <g transform="rotate(-12 35 88)">
+        <ellipse cx="35" cy="88" rx="21" ry="25" fill="#E4572E"/>
+        <ellipse cx="35" cy="89.5" rx="15" ry="18" fill="#E4572E" stroke="#DCDAD5" stroke-width="2"/>
+        <rect x="31" y="66" width="8" height="2.2" rx="1.1" fill="#DCDAD5"/>
+      </g>
+      <g transform="rotate(12 89 88)">
+        <ellipse cx="89" cy="88" rx="21" ry="25" fill="#E4572E"/>
+        <ellipse cx="89" cy="89.5" rx="15" ry="18" fill="#E4572E" stroke="#DCDAD5" stroke-width="2"/>
+        <rect x="85" y="66" width="8" height="2.2" rx="1.1" fill="#DCDAD5"/>
+      </g>
+    </g>
+  </g>
+</svg>

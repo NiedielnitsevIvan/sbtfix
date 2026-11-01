@@ -56,6 +56,14 @@ for a moment (about 30 s in all) and captures it with `screencapture`. Your term
 Screen Recording permission, and keep the pointer away from the menu while it runs. The states
 are defined in `Sources/sbtfix/Screenshots.swift`.
 
+## App icon
+
+`Resources/AppIcon.svg` is the source. After editing it, regenerate `Resources/AppIcon.icns`:
+
+```sh
+swift Resources/make-icon.swift
+```
+
 ## Making a release
 
 1. Rename `## Unreleased` in `CHANGELOG.md` to the new version, e.g. `## 1.1.0`.

@@ -72,9 +72,7 @@ connects.
 
 🟡 means the protocol support is built in, based on
 [Gadgetbridge](https://codeberg.org/Freeyourgadget/Gadgetbridge)'s research, but nobody has
-confirmed it on a Mac yet. If you own one of these, please send a
-[device report](../../issues/new?template=device-report.md), even if it just says "works".
-Other Sony models aren't listed but will probably partly work.
+confirmed it on a Mac yet. Other Sony models aren't listed but will probably partly work.
 
 Requires **macOS 14 Sonoma or later**.
 
@@ -119,8 +117,7 @@ in macOS, not just paired. It connects on its own when they appear.
 - **"No paired Sony headphones found"**: the app finds devices by name (`WH-…`, `WF-…`, `WI-…`,
   `LinkBuds…`, `ULT WEAR`). If you renamed your headphones, rename them back.
 - **A mode or feature you expect is missing**: the app shows only what your model supports, and
-  hides Speak-to-Chat if the device doesn't respond to it. If that's wrong for your model,
-  please open a device report with a debug log.
+  hides Speak-to-Chat if the device doesn't respond to it.
 - **Stuck on "Connecting…"**: turn the headphones off and on, or click **Retry**. If the Sony
   phone app is connected at the same moment, it can hold the control channel.
 - **Nothing happens after granting Bluetooth permission**: quit and relaunch the app once.
