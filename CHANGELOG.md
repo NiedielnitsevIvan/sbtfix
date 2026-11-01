@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
 - "On connect" startup mode: switch to Off or Ambient Sound as soon as the headphones connect
   (WH-1000XM4 always power on in Noise Cancelling)

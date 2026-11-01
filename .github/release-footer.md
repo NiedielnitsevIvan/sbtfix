@@ -8,6 +8,6 @@
    ```
 3. Click **Allow** when macOS asks for Bluetooth access. The headphones icon appears in your menu bar.
 
-Requires macOS 14 Sonoma or later. See the [compatibility table](https://github.com/htsecurity/sbtfix#compatibility) for supported models.
+Requires macOS 14 Sonoma or later. See the [compatibility table](https://github.com/NiedielnitsevIvan/sbtfix#compatibility) for supported models.
 
-<img src="https://raw.githubusercontent.com/htsecurity/sbtfix/main/docs/screenshots/ambient-dark.png" alt="sbtfix menu" width="300">
+<img src="https://raw.githubusercontent.com/NiedielnitsevIvan/sbtfix/main/docs/screenshots/ambient-dark.png" alt="sbtfix menu" width="356">
