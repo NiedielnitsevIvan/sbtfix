@@ -9,7 +9,7 @@ Sony doesn't publish a Mac version of its Sound Connect / Headphones Connect app
 talks to the headphones directly over Bluetooth using the same protocol the phone app uses.
 
 <p align="center">
-  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/ambient-dark.png"><img src="docs/screenshots/ambient-light.png" alt="sbtfix menu showing Ambient Sound mode with the level slider" width="320"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/ambient-dark.png"><img src="docs/screenshots/ambient-light.png" alt="sbtfix menu showing Ambient Sound mode with the level slider" width="356"></picture>
 </p>
 
 ## Features
@@ -18,32 +18,36 @@ talks to the headphones directly over Bluetooth using the same protocol the phon
   Reduction on models that have it
 - Ambient level slider (1–20) and Focus on Voice
 - Speak-to-Chat on/off
+- **On connect**: switch to Off or Ambient Sound as soon as the headphones connect, before you
+  put them on (WH-1000XM4 always power on in Noise Cancelling)
 - Battery level with a charging indicator; left, right and case for earbuds
 - Detects the model and protocol generation automatically, and only shows what your model
   supports
 - The menu-bar icon shows the current mode
 - Stays in sync when you use the buttons on the headphones
 - Reconnects automatically when the headphones connect
+- Liquid Glass design on macOS 26 and later
+- Next to no CPU use in the background
 - No Dock icon, no background daemons, no network access, no dependencies
 
 ## Screenshots
 
 <table>
   <tr>
-    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/noise-cancelling-dark.png"><img src="docs/screenshots/noise-cancelling-light.png" alt="Noise Cancelling" width="300"></picture><br><sub><b>Noise Cancelling</b></sub></td>
-    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/ambient-dark.png"><img src="docs/screenshots/ambient-light.png" alt="Ambient Sound" width="300"></picture><br><sub><b>Ambient Sound</b>: level slider and Focus on Voice</sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/noise-cancelling-dark.png"><img src="docs/screenshots/noise-cancelling-light.png" alt="Noise Cancelling" width="356"></picture><br><sub><b>Noise Cancelling</b></sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/ambient-dark.png"><img src="docs/screenshots/ambient-light.png" alt="Ambient Sound" width="356"></picture><br><sub><b>Ambient Sound</b>: level slider and Focus on Voice</sub></td>
   </tr>
   <tr>
-    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/off-dark.png"><img src="docs/screenshots/off-light.png" alt="Off" width="300"></picture><br><sub><b>Off</b></sub></td>
-    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/wind-xm4-dark.png"><img src="docs/screenshots/wind-xm4-light.png" alt="Wind Noise Reduction on WH-1000XM4" width="300"></picture><br><sub><b>Wind Reduction</b>: added on models that support it (here a WH-1000XM4)</sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/off-dark.png"><img src="docs/screenshots/off-light.png" alt="Off" width="356"></picture><br><sub><b>Off</b></sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/wind-xm4-dark.png"><img src="docs/screenshots/wind-xm4-light.png" alt="Wind Noise Reduction on WH-1000XM4" width="356"></picture><br><sub><b>Wind Reduction</b>: added on models that support it (here a WH-1000XM4)</sub></td>
   </tr>
   <tr>
-    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/earbuds-dark.png"><img src="docs/screenshots/earbuds-light.png" alt="Earbuds battery" width="300"></picture><br><sub><b>Earbuds</b>: left, right and case battery (WF-1000XM5)</sub></td>
-    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/waiting-dark.png"><img src="docs/screenshots/waiting-light.png" alt="Waiting for headphones" width="300"></picture><br><sub><b>Waiting</b>: headphones not connected to the Mac yet</sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/earbuds-dark.png"><img src="docs/screenshots/earbuds-light.png" alt="Earbuds battery" width="356"></picture><br><sub><b>Earbuds</b>: left, right and case battery (WF-1000XM5)</sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/waiting-dark.png"><img src="docs/screenshots/waiting-light.png" alt="Waiting for headphones" width="356"></picture><br><sub><b>Waiting</b>: headphones not connected to the Mac yet</sub></td>
   </tr>
   <tr>
-    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/connecting-dark.png"><img src="docs/screenshots/connecting-light.png" alt="Connecting" width="300"></picture><br><sub><b>Connecting</b></sub></td>
-    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/bluetooth-off-dark.png"><img src="docs/screenshots/bluetooth-off-light.png" alt="Bluetooth off" width="300"></picture><br><sub><b>Bluetooth off</b>: reconnects by itself when it's back on</sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/connecting-dark.png"><img src="docs/screenshots/connecting-light.png" alt="Connecting" width="356"></picture><br><sub><b>Connecting</b></sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/bluetooth-off-dark.png"><img src="docs/screenshots/bluetooth-off-light.png" alt="Bluetooth off" width="356"></picture><br><sub><b>Bluetooth off</b>: reconnects by itself when it's back on</sub></td>
   </tr>
 </table>
 
@@ -56,7 +60,7 @@ connects.
 |-------|----------|-------|--------|
 | WH-1000XM5 | v2 | NC · Ambient · Off | ✅ Tested (fw 2.4.1) |
 | WH-1000XM6 | v2 | NC · Ambient · Off | 🟡 Expected to work |
-| WH-1000XM4 | v1 | NC · Wind · Ambient · Off | 🟡 Expected to work |
+| WH-1000XM4 | v1 | NC · Wind · Ambient · Off | ✅ Tested (fw 2.5.0) |
 | WH-1000XM3, WH-1000XM2 | v1 | NC · Wind · Ambient · Off | 🟡 Expected to work |
 | WF-1000XM5, WF-1000XM4 | v2 | NC (· Wind on XM4) · Ambient · Off | 🟡 Expected to work |
 | WF-1000XM3 | v1 | NC · Wind · Ambient · Off | 🟡 Expected to work |
@@ -89,10 +93,10 @@ Requires **macOS 14 Sonoma or later**.
 
 ### Build from source
 
-You need Xcode 15 or later, or the Swift 5.9+ command-line tools.
+You need Xcode 26 or later, or its command-line tools (the macOS 26 SDK).
 
 ```sh
-git clone https://github.com/htsecurity/sbtfix.git
+git clone https://github.com/NiedielnitsevIvan/sbtfix.git
 cd sbtfix
 ./build.sh            # builds build/sbtfix.app
 ./build.sh --install  # also copies it to /Applications
@@ -104,6 +108,8 @@ To start sbtfix at login, add it under **System Settings → General → Login I
 
 1. Pair and connect your headphones in macOS Bluetooth settings as usual.
 2. Click the headphones icon in the menu bar.
+3. Optionally, pick a mode under **On connect** to have it applied every time the headphones
+   connect.
 
 If the app says *Waiting for headphones to connect…*, check that the headphones are connected
 in macOS, not just paired. It connects on its own when they appear.
