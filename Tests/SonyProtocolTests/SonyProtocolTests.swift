@@ -136,6 +136,9 @@ final class V1Tests: XCTestCase {
         XCTAssertEqual(Command.setSpeakToChat(true, .v1), [0xF8, 0x05, 0x01, 0x01])
         XCTAssertEqual(EventParser.parse([0xF7, 0x05, 0x01, 0x01], version: .v1), .speakToChat(enabled: true))
         XCTAssertEqual(EventParser.parse([0xF9, 0x05, 0x01, 0x00], version: .v1), .speakToChat(enabled: false))
+        // WH-1000XM4 answers a GET with 00 in the third byte
+        XCTAssertEqual(EventParser.parse([0xF7, 0x05, 0x00, 0x00], version: .v1), .speakToChat(enabled: false))
+        XCTAssertEqual(EventParser.parse([0xF7, 0x05, 0x00, 0x01], version: .v1), .speakToChat(enabled: true))
         // The 02 acknowledgement form carries no value
         XCTAssertEqual(EventParser.parse([0xF9, 0x05, 0x02, 0x01], version: .v1), .unknown(0xF9))
     }

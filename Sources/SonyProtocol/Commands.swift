@@ -152,8 +152,9 @@ public enum EventParser {
         case (.v1, 0x11), (.v1, 0x13): parsed = parseBattery(p, single: 0x00, dual: [0x01], case: 0x02)
         case (.v2, 0x23), (.v2, 0x25): parsed = parseBattery(p, single: 0x00, dual: [0x01, 0x09], case: 0x0A)
         case (.v1, 0xF7), (.v1, 0xF9):
-            // Only the status form (sub-byte 01) carries the value; setting it also echoes an 02 form.
-            parsed = p.count == 4 && p[1] == 0x05 && p[2] == 0x01 ? .speakToChat(enabled: p[3] == 0x01) : nil
+            // Third byte is 00 in replies (WH-1000XM4: F7 05 00 00) and 01 in notifications. Setting it also
+            // sends an 02 form (preview state, not the setting).
+            parsed = p.count == 4 && p[1] == 0x05 && p[2] <= 0x01 ? .speakToChat(enabled: p[3] == 0x01) : nil
         case (.v2, 0xF7), (.v2, 0xF9):
             parsed = p.count >= 3 && p[1] == 0x0C ? .speakToChat(enabled: p[2] == 0x00) : nil
         default: parsed = nil
