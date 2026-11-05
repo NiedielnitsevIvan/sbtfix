@@ -72,13 +72,14 @@ swift Resources/make-icon.swift
    git tag v1.1.0 && git push origin main v1.1.0
    ```
 3. The Release workflow tests, builds and stamps the version, then publishes `sbtfix.zip` with
-   that changelog section as the release notes.
+   that changelog section as the release notes. Check for Updates needs that asset name, and the
+   app inside it must have the tag's version.
 
 ## Ideas / roadmap
 
-- Equalizer presets and custom bands
+- Equalizer custom bands
 - DSEE Extreme, connection quality (LDAC / priority on stable connection)
 - Automatic power off, pause when taken off
 - Speak-to-Chat sensitivity and timeout
 - Global keyboard shortcut to cycle modes
-- App icon, notarized releases, Homebrew cask
+- Notarized releases, Homebrew cask

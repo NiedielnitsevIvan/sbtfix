@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Equalizer submenu with the WH-1000XM4 presets. Other v1 models may work too, but aren't tested.
+- Check for Updates installs the latest GitHub release. It only goes online when you click it.
 
 ## 1.1.0
 

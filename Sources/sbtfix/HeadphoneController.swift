@@ -306,7 +306,7 @@ final class HeadphoneController: NSObject, ObservableObject {
         tearDown()
     }
 
-    private func tearDown() {
+    func tearDown() {
         ackTimer?.invalidate()
         ackTimer = nil
         batteryTimer?.invalidate()

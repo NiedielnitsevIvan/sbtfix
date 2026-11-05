@@ -29,7 +29,9 @@ talks to the headphones directly over Bluetooth using the same protocol the phon
 - Reconnects automatically when the headphones connect
 - Liquid Glass design on macOS 26 and later
 - Next to no CPU use in the background
-- No Dock icon, no background daemons, no network access, no dependencies
+- **Check for Updates** installs the latest release from GitHub
+- No Dock icon, no background daemons, no dependencies, and no network access until you click
+  Check for Updates
 
 ## Screenshots
 
@@ -144,7 +146,9 @@ Sources/
   sbtfix/
     HeadphoneController.swift   IOBluetooth RFCOMM connection, command queue, state
     SbtfixApp.swift        Status-item menu hosting the SwiftUI panel
+    Updater.swift          Check for Updates
 Tests/SonyProtocolTests/        Protocol tests (swift test)
+Tests/sbtfixTests/              Update check tests (swift test)
 ```
 
 ## Contributing

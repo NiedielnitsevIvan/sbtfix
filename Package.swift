@@ -8,5 +8,6 @@ let package = Package(
         .target(name: "SonyProtocol"),
         .executableTarget(name: "sbtfix", dependencies: ["SonyProtocol"]),
         .testTarget(name: "SonyProtocolTests", dependencies: ["SonyProtocol"]),
+        .testTarget(name: "sbtfixTests", dependencies: ["sbtfix"]),
     ]
 )

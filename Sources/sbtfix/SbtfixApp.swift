@@ -46,6 +46,7 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         retryItem.target = self
         menu.addItem(retryItem)
+        menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "").target = self
         menu.addItem(withTitle: "Quit sbtfix", action: #selector(NSApplication.terminate), keyEquivalent: "q")
         menu.delegate = self
         retryVisibility = controller.$status.sink { [retryItem] in retryItem.isHidden = $0 == .connected }
@@ -91,6 +92,8 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func retry() { controller.connect() }
+
+    @objc private func checkForUpdates() { Task { await Updater.check(controller) } }
 
     @objc private func setStartupMode(_ sender: NSMenuItem) {
         if let mode = sender.representedObject as? StartupMode { controller.startupMode = mode }
