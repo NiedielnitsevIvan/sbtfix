@@ -10,10 +10,12 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let controller = Screenshots.shot?.controller ?? HeadphoneController()
     private let menu = NSMenu()
     private let retryItem = NSMenuItem(title: "Retry", action: #selector(retry), keyEquivalent: "")
+    private let equalizerItem = NSMenuItem(title: "Equalizer", action: nil, keyEquivalent: "")
     private var startupItems: [NSMenuItem] = []
     private var item: NSStatusItem?
     private var icon: AnyCancellable?
     private var retryVisibility: AnyCancellable?
+    private var equalizerState: AnyCancellable?
 
     static func main() {
         let app = SbtfixApp()
@@ -36,14 +38,10 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
         panel.view = host
         menu.addItem(panel)
         menu.addItem(.separator())
-        let startup = NSMenu()
-        for mode in StartupMode.allCases {
-            let item = NSMenuItem(title: mode.title, action: #selector(setStartupMode), keyEquivalent: "")
-            item.target = self
-            item.representedObject = mode
-            startup.addItem(item)
-            startupItems.append(item)
-        }
+        equalizerItem.submenu = submenu(EqualizerPreset.allCases, title: \.title, action: #selector(setEqualizer))
+        menu.addItem(equalizerItem)
+        let startup = submenu(StartupMode.allCases, title: \.title, action: #selector(setStartupMode))
+        startupItems = startup.items
         menu.addItem(withTitle: "On connect", action: nil, keyEquivalent: "").submenu = startup
         menu.addItem(.separator())
         retryItem.target = self
@@ -51,6 +49,12 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(withTitle: "Quit sbtfix", action: #selector(NSApplication.terminate), keyEquivalent: "q")
         menu.delegate = self
         retryVisibility = controller.$status.sink { [retryItem] in retryItem.isHidden = $0 == .connected }
+        equalizerState = controller.$equalizer.sink { [equalizerItem] current in
+            equalizerItem.isHidden = current == nil
+            for item in equalizerItem.submenu?.items ?? [] {
+                item.state = item.representedObject as? EqualizerPreset == current ? .on : .off
+            }
+        }
         if let shot = Screenshots.shot { Screenshots.open(menu, dark: shot.dark) }
 
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -66,6 +70,17 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
         controller.start()
     }
 
+    private func submenu<Value>(_ values: [Value], title: (Value) -> String, action: Selector) -> NSMenu {
+        let submenu = NSMenu()
+        for value in values {
+            let item = NSMenuItem(title: title(value), action: action, keyEquivalent: "")
+            item.target = self
+            item.representedObject = value
+            submenu.addItem(item)
+        }
+        return submenu
+    }
+
     func menuWillOpen(_ menu: NSMenu) {
         for item in startupItems {
             item.state = item.representedObject as? StartupMode == controller.startupMode ? .on : .off
@@ -79,6 +94,10 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func setStartupMode(_ sender: NSMenuItem) {
         if let mode = sender.representedObject as? StartupMode { controller.startupMode = mode }
+    }
+
+    @objc private func setEqualizer(_ sender: NSMenuItem) {
+        if let preset = sender.representedObject as? EqualizerPreset { controller.setEqualizer(preset) }
     }
 }
 
@@ -98,6 +117,25 @@ extension AmbientMode {
         case .windNoiseReduction: "wind"
         case .ambient: "ear.fill"
         case .off: "headphones"
+        }
+    }
+}
+
+extension EqualizerPreset {
+    var title: String {
+        switch self {
+        case .off: "Off"
+        case .bright: "Bright"
+        case .excited: "Excited"
+        case .mellow: "Mellow"
+        case .relaxed: "Relaxed"
+        case .vocal: "Vocal"
+        case .trebleBoost: "Treble Boost"
+        case .bassBoost: "Bass Boost"
+        case .speech: "Speech"
+        case .manual: "Manual"
+        case .custom1: "Custom 1"
+        case .custom2: "Custom 2"
         }
     }
 }

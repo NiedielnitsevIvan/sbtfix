@@ -143,6 +143,17 @@ final class V1Tests: XCTestCase {
         XCTAssertEqual(EventParser.parse([0xF9, 0x05, 0x02, 0x01], version: .v1), .unknown(0xF9))
     }
 
+    func testEqualizer() {
+        XCTAssertEqual(Command.getEqualizer, [0x56, 0x01])
+        XCTAssertEqual(Command.setEqualizer(.bright), [0x58, 0x01, 0x10, 0x00])
+        // Captured from a WH-1000XM4, firmware 2.5.0
+        XCTAssertEqual(EventParser.parse([0x57, 0x01, 0x00, 0x06, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A], version: .v1), .equalizer(.off))
+        XCTAssertEqual(EventParser.parse([0x59, 0x01, 0x10, 0x06, 0x09, 0x0A, 0x0F, 0x11, 0x11, 0x13], version: .v1), .equalizer(.bright))
+        // A preset this enum doesn't know, and the v2 form (WF-1000XM5), are ignored
+        XCTAssertEqual(EventParser.parse([0x57, 0x01, 0x30, 0x06, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A], version: .v1), .unknown(0x57))
+        XCTAssertEqual(EventParser.parse([0x57, 0x00, 0xA0, 0x06, 0x14, 0x0B, 0x0A, 0x0D, 0x09, 0x0C], version: .v2), .unknown(0x57))
+    }
+
     func testV1CodesAreNotParsedAsV2() {
         XCTAssertEqual(EventParser.parse([0x11, 0x00, 0x46, 0x01], version: .v2), .unknown(0x11))
     }

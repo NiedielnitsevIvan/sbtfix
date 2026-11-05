@@ -18,6 +18,7 @@ talks to the headphones directly over Bluetooth using the same protocol the phon
   Reduction on models that have it
 - Ambient level slider (1–20) and Focus on Voice
 - Speak-to-Chat on/off
+- Equalizer presets on WH-1000XM4
 - **On connect**: switch to Off or Ambient Sound as soon as the headphones connect, before you
   put them on (WH-1000XM4 always power on in Noise Cancelling)
 - Battery level with a charging indicator; left, right and case for earbuds

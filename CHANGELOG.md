@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Equalizer submenu with the WH-1000XM4 presets. Other v1 models may work too, but aren't tested.
+
 ## 1.1.0
 
 - "On connect" startup mode: switch to Off or Ambient Sound as soon as the headphones connect

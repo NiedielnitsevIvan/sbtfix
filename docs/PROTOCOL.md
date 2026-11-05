@@ -145,10 +145,24 @@ layout as v2.
 | → SET | `F8 05 01 <on>` (`01` = enabled, **not** inverted) |
 | ← RET/NOTIFY | `F7 05 01 <on>` / `F9 …`. A form with `02` as the third byte is also sent after a SET; it carries no value. |
 
+### Equalizer (`56`–`59`, v1)
+
+| Direction | Payload |
+|-----------|---------|
+| → GET | `56 01` |
+| → SET preset | `58 01 <preset> 00` |
+| ← RET/NOTIFY | `57 01 <preset> 06 <clear bass> <400 Hz> <1 kHz> <2.5 kHz> <6.3 kHz> <16 kHz>` / `59 …` |
+
+Each value is a step from -10 to +10, sent with 10 added. Presets on a WH-1000XM4 (fw 2.5.0): `00` Off, `10` Bright,
+`11` Excited, `12` Mellow, `13` Relaxed, `14` Vocal, `15` Treble Boost, `16` Bass Boost, `17` Speech, `A0` Manual,
+`A1` Custom 1, `A2` Custom 2. The headphones keep the preset across reconnects. Newer models use other ids, so the
+app only handles the equalizer on v1.
+
 ## Seen but not yet decoded
 
 | Payload | Observed when |
 |---------|---------------|
+| `17 00 02 00` | Sent when a WH-1000XM4 switches between equalizer Off and a preset, not between presets |
 | `A5 01 00 01 00` / `A5 01 00 02 00` | Playback appears to resume or pause (for example when Speak-to-Chat triggers) |
 | `A9 …` | Sent frequently during playback |
 

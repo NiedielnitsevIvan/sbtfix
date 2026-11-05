@@ -62,6 +62,8 @@ final class HeadphoneController: NSObject, ObservableObject {
     @Published private(set) var ambientLayout: AmbientLayout?
     /// nil until the device answers; stays nil on models without Speak-to-Chat.
     @Published private(set) var speakToChat: Bool?
+    /// nil until the device answers; stays nil on models without an equalizer.
+    @Published private(set) var equalizer: EqualizerPreset?
 
     /// Applied once per connection, as soon as the device has reported its ambient state.
     var startupMode: StartupMode = StartupMode.load() {
@@ -179,6 +181,7 @@ final class HeadphoneController: NSObject, ObservableObject {
         }
         requestBattery()
         enqueue(Command.getSpeakToChat(version), key: "get-stc")
+        requestEqualizer()
     }
 
     func setMode(_ mode: AmbientMode) {
@@ -204,6 +207,11 @@ final class HeadphoneController: NSObject, ObservableObject {
         speakToChat = on
         lastStcSet = Date()
         enqueue(Command.setSpeakToChat(on, version), key: "stc")
+    }
+
+    func setEqualizer(_ preset: EqualizerPreset) {
+        equalizer = preset
+        enqueue(Command.setEqualizer(preset), key: "eq")
     }
 
     private func sendAmbient(_ s: AmbientState) {
@@ -232,6 +240,11 @@ final class HeadphoneController: NSObject, ObservableObject {
         guard s.mode == .ambient else { return }
         UserDefaults.standard.set(s.level, forKey: Self.levelKey)
         UserDefaults.standard.set(s.focusOnVoice, forKey: Self.focusKey)
+    }
+
+    /// v1 only: newer models use other preset ids.
+    private func requestEqualizer() {
+        if version == .v1 { enqueue(Command.getEqualizer, key: "get-eq") }
     }
 
     private func requestBattery() {
@@ -314,6 +327,7 @@ final class HeadphoneController: NSObject, ObservableObject {
         ambientLayout = nil
         batteries = Batteries()
         speakToChat = nil
+        equalizer = nil
         status = .searching
         startRetryTimer()
     }
@@ -414,6 +428,8 @@ final class HeadphoneController: NSObject, ObservableObject {
             guard !queue.contains(where: { $0.key == "stc" }),
                   Date().timeIntervalSince(lastStcSet) > 0.8 else { return }
             speakToChat = enabled
+        case .equalizer(let preset):
+            equalizer = preset
         case .unknown:
             break
         }
@@ -456,6 +472,7 @@ final class HeadphoneController: NSObject, ObservableObject {
         }
         requestBattery()
         enqueue(Command.getSpeakToChat(v))
+        requestEqualizer()
     }
 }
 
@@ -505,7 +522,8 @@ extension HeadphoneController {
     static func preview(status: Status, name: String = "WH-1000XM5",
                         batteries: Batteries = Batteries(single: BatteryLevel(level: 72, charging: false)),
                         ambient: AmbientState = AmbientState(mode: .noiseCancelling, focusOnVoice: false, level: 20),
-                        speakToChat: Bool? = false) -> HeadphoneController {
+                        speakToChat: Bool? = false,
+                        equalizer: EqualizerPreset? = nil) -> HeadphoneController {
         let c = HeadphoneController()
         c.status = status
         c.deviceName = name
@@ -513,6 +531,7 @@ extension HeadphoneController {
         c.batteries = batteries
         c.ambient = ambient
         c.speakToChat = speakToChat
+        c.equalizer = equalizer
         return c
     }
 }

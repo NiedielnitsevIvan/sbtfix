@@ -55,6 +55,14 @@ public enum BatteryKind: CaseIterable {
     case single, dual, dualAlt, caseBattery
 }
 
+/// Equalizer presets of the WH-1000XM4. Newer models use other ids.
+public enum EqualizerPreset: UInt8, CaseIterable {
+    case off = 0x00
+    case bright = 0x10, excited = 0x11, mellow = 0x12, relaxed = 0x13, vocal = 0x14
+    case trebleBoost = 0x15, bassBoost = 0x16, speech = 0x17
+    case manual = 0xA0, custom1 = 0xA1, custom2 = 0xA2
+}
+
 public enum Command {
     public static let initRequest: [UInt8] = [0x00, 0x00]
 
@@ -124,6 +132,14 @@ public enum Command {
         case .v2: [0xF8, 0x0C, enabled ? 0x00 : 0x01, 0x01]
         }
     }
+
+    // MARK: Equalizer (v1 only)
+
+    public static let getEqualizer: [UInt8] = [0x56, 0x01]
+
+    public static func setEqualizer(_ preset: EqualizerPreset) -> [UInt8] {
+        [0x58, 0x01, preset.rawValue, 0x00]
+    }
 }
 
 public enum Event: Equatable {
@@ -133,6 +149,7 @@ public enum Event: Equatable {
     case batteryDual(left: BatteryLevel?, right: BatteryLevel?)
     case batteryCase(BatteryLevel)
     case speakToChat(enabled: Bool)
+    case equalizer(EqualizerPreset)
     case unknown(UInt8)
 }
 
@@ -157,6 +174,8 @@ public enum EventParser {
             parsed = p.count == 4 && p[1] == 0x05 && p[2] <= 0x01 ? .speakToChat(enabled: p[3] == 0x01) : nil
         case (.v2, 0xF7), (.v2, 0xF9):
             parsed = p.count >= 3 && p[1] == 0x0C ? .speakToChat(enabled: p[2] == 0x00) : nil
+        case (.v1, 0x57), (.v1, 0x59):
+            parsed = p.count == 10 && p[1] == 0x01 ? EqualizerPreset(rawValue: p[2]).map(Event.equalizer) : nil
         default: parsed = nil
         }
         return parsed ?? .unknown(code)
