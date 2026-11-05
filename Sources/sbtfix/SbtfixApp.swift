@@ -8,10 +8,12 @@ import SonyProtocol
 @main
 final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let controller = Screenshots.shot?.controller ?? HeadphoneController()
+    private lazy var panelUpdates = PanelUpdates(controller)
     private let menu = NSMenu()
     private let retryItem = NSMenuItem(title: "Retry", action: #selector(retry), keyEquivalent: "")
     private let equalizerItem = NSMenuItem(title: "Equalizer", action: nil, keyEquivalent: "")
     private var startupItems: [NSMenuItem] = []
+    private var host: NSView?
     private var item: NSStatusItem?
     private var icon: AnyCancellable?
     private var retryVisibility: AnyCancellable?
@@ -31,10 +33,11 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         let panel = NSMenuItem()
-        let host = NSHostingView(rootView: ControlPanel(controller: controller))
+        let host = NSHostingView(rootView: ControlPanel(controller: controller, updates: panelUpdates))
         host.rootView.onResize = { [weak host] in host?.frame.size = $0 }
         host.frame.size = host.fittingSize
         panel.view = host
+        self.host = host
         menu.addItem(panel)
         menu.addItem(.separator())
         equalizerItem.submenu = submenu(EqualizerPreset.allCases, title: \.title, action: #selector(setEqualizer))
@@ -70,6 +73,10 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
         controller.start()
     }
 
+    func menuDidClose(_ menu: NSMenu) {
+        panelUpdates.isVisible = false
+    }
+
     private func submenu<Value>(_ values: [Value], title: (Value) -> String, action: Selector) -> NSMenu {
         let submenu = NSMenu()
         for value in values {
@@ -82,6 +89,9 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
+        panelUpdates.isVisible = true
+        // Applies the catch-up now, so the menu measures the panel at its current height.
+        host?.layoutSubtreeIfNeeded()
         for item in startupItems {
             item.state = item.representedObject as? StartupMode == controller.startupMode ? .on : .off
         }
@@ -142,8 +152,24 @@ extension EqualizerPreset {
     }
 }
 
+/// Redraws the panel only while the menu is open. While it's closed the panel has no window and so no
+/// frames: SwiftUI counts every change as one frame, logs faults and stops reporting the panel's size.
+final class PanelUpdates: ObservableObject {
+    var isVisible = false {
+        didSet { if isVisible { objectWillChange.send() } }
+    }
+    private var changes: AnyCancellable?
+
+    init(_ controller: HeadphoneController) {
+        changes = controller.objectWillChange.sink { [weak self] in
+            if self?.isVisible == true { self?.objectWillChange.send() }
+        }
+    }
+}
+
 struct ControlPanel: View {
-    @ObservedObject var controller: HeadphoneController
+    let controller: HeadphoneController
+    @ObservedObject var updates: PanelUpdates
     var onResize: (CGSize) -> Void = { _ in }
     @State private var level: Double = 10
 
