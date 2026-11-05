@@ -27,8 +27,7 @@ final class SbtfixApp: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let args = CommandLine.arguments
         if let i = args.firstIndex(of: "--screenshots"), i + 1 < args.count {
-            Screenshots.render(to: URL(fileURLWithPath: args[i + 1]))
-            exit(0)
+            exit(Screenshots.render(to: URL(fileURLWithPath: args[i + 1])) ? 0 : 1)
         }
 
         let panel = NSMenuItem()

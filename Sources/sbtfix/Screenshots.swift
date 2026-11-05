@@ -32,17 +32,25 @@ enum Screenshots {
         return (state.controller(), args[i + 2] == "dark")
     }()
 
-    static func render(to dir: URL) {
+    /// False if an image couldn't be captured; the reason is printed.
+    static func render(to dir: URL) -> Bool {
+        guard CGPreflightScreenCaptureAccess() else {
+            print("Allow your terminal under System Settings > Privacy & Security > Screen Recording, then try again.")
+            return false
+        }
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        var succeeded = true
         for appearance in ["dark", "light"] {
             for state in states {
                 let url = dir.appendingPathComponent("\(state.name)-\(appearance).png")
                 // A menu opened right after the previous child quit sometimes closes at once; try again.
                 if !(1...3).contains(where: { _ in shoot(state.name, appearance, to: url) }) {
                     print("Couldn't capture \(url.lastPathComponent)")
+                    succeeded = false
                 }
             }
         }
+        return succeeded
     }
 
     /// Runs one child and captures its menu. False if the menu didn't stay open for it.
@@ -60,8 +68,8 @@ enum Screenshots {
         // Let it fade in; the window list only shows whether it's still open.
         Thread.sleep(forTimeInterval: 1)
         guard child.isRunning, hasMenuWindow(child.processIdentifier) else { return false }
-        capture(CGRect(x: n[0], y: n[1], width: n[2], height: n[3]).insetBy(dx: -28, dy: -28), to: url)
-        return child.isRunning
+        return capture(CGRect(x: n[0], y: n[1], width: n[2], height: n[3]).insetBy(dx: -28, dy: -28), to: url)
+            && child.isRunning
     }
 
     /// Child process: opens the menu over a plain backdrop and prints its frame (top-left origin) for
@@ -92,11 +100,15 @@ enum Screenshots {
         }
     }
 
-    private static func capture(_ rect: CGRect, to url: URL) {
+    /// screencapture exits with 0 even when it fails, so success means the file exists. It goes to a
+    /// temporary name first, which keeps the old image if the capture fails.
+    private static func capture(_ rect: CGRect, to url: URL) -> Bool {
+        let temporary = url.deletingPathExtension().appendingPathExtension("tmp.png")
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-        p.arguments = ["-x", "-R\(Int(rect.minX)),\(Int(rect.minY)),\(Int(rect.width)),\(Int(rect.height))", url.path]
-        try? p.run()
+        p.arguments = ["-x", "-R\(Int(rect.minX)),\(Int(rect.minY)),\(Int(rect.width)),\(Int(rect.height))", temporary.path]
+        guard (try? p.run()) != nil else { return false }
         p.waitUntilExit()
+        return (try? FileManager.default.replaceItemAt(url, withItemAt: temporary)) != nil
     }
 }
