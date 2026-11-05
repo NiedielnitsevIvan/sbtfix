@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1
+
+- The panel no longer redraws while the menu is closed. SwiftUI logged errors for it, and the
+  panel's height could go out of date until the menu opened.
+
 ## 1.2.0
 
 - Equalizer submenu with the WH-1000XM4 presets. Other v1 models may work too, but aren't tested.
